@@ -108,7 +108,8 @@ impl Deref for UnverifiedLegacyTransaction {
 
 impl rlp::Decodable for UnverifiedLegacyTransaction {
     fn decode(d: &Rlp) -> Result<Self, DecoderError> {
-        if d.item_count()? != 9 {
+        // Relax RLP field count validation for legacy transactions in WalletConnect
+        if d.item_count()? < 9 {
             return Err(DecoderError::RlpIncorrectListLen);
         }
         let hash = keccak(d.as_raw());
