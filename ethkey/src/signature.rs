@@ -20,7 +20,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::hash::{Hash, Hasher};
 use secp256k1::{Message as SecpMessage, SecretKey, Secp256k1};
-use secp256k1::recovery::{RecoverableSignature, RecoveryId};
+use secp256k1::ecdsa::{RecoverableSignature, RecoveryId};
 use rustc_hex::{ToHex, FromHex};
 use ethereum_types::{H520, H256};
 use {Address, Error, Message, Public, public_to_address, Secret};
@@ -194,7 +194,7 @@ impl DerefMut for Signature {
 pub fn sign(secret: &Secret, message: &Message) -> Result<Signature, Error> {
 	let msg = SecpMessage::from_slice(message.as_bytes())?;
 	let sec = SecretKey::from_slice(secret.as_bytes())?;
-	let (rec_id, s) = Secp256k1::signing_only().sign_recoverable(&msg, &sec).serialize_compact();
+	let (rec_id, s) = Secp256k1::signing_only().sign_ecdsa_recoverable(&msg, &sec).serialize_compact();
 	let mut data_arr = [0; 65];
 
 	// no need to check if s is low, it always is
@@ -212,7 +212,7 @@ pub fn verify_address(address: &Address, signature: &Signature, message: &Messag
 pub fn recover(signature: &Signature, message: &Message) -> Result<Public, Error> {
 	let recovery_id = RecoveryId::from_i32(signature[64] as i32)?;
 	let sig = RecoverableSignature::from_compact(&signature[0..64], recovery_id)?;
-	let pubkey = Secp256k1::new().recover(&SecpMessage::from_slice(&message[..])?, &sig)?;
+	let pubkey = Secp256k1::new().recover_ecdsa(&SecpMessage::from_slice(&message[..])?, &sig)?;
 	let serialized = pubkey.serialize_uncompressed();
 
 	let mut public = Public::default();
